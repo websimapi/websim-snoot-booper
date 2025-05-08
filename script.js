@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSnootPrompt = '';
     let discoveredSnoots = [];
     let boopSound;
+    let audioEnabled = true;
     
     // Initialize sound
     initializeAudio();
@@ -32,15 +33,49 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to initialize audio
     function initializeAudio() {
-        boopSound = new Audio('boop_sound.mp3');
-        boopSound.volume = 0.5;
+        try {
+            boopSound = new Audio('boop_sound.mp3');
+            boopSound.volume = 0.5;
+            
+            // Check if audio can be played
+            boopSound.addEventListener('canplaythrough', () => {
+                audioEnabled = true;
+            });
+            
+            // Handle audio loading error
+            boopSound.addEventListener('error', (e) => {
+                console.error('Audio loading error:', e);
+                audioEnabled = false;
+            });
+            
+            // Preload the audio
+            boopSound.load();
+        } catch (error) {
+            console.error('Audio initialization error:', error);
+            audioEnabled = false;
+        }
     }
     
     // Function to boop the snoot
     function boopTheSnoot() {
-        // Play boop sound
-        boopSound.currentTime = 0;
-        boopSound.play();
+        // Play boop sound if audio is enabled
+        if (audioEnabled && boopSound) {
+            try {
+                boopSound.currentTime = 0;
+                const playPromise = boopSound.play();
+                
+                // Handle play promise rejection
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.error('Audio playback error:', error);
+                        audioEnabled = false;
+                    });
+                }
+            } catch (error) {
+                console.error('Error playing sound:', error);
+                audioEnabled = false;
+            }
+        }
         
         // Show boop effect
         boopEffect.classList.add('active');
@@ -248,4 +283,3 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
-
