@@ -12,7 +12,20 @@ body {
     background-attachment: fixed;
     color: #5D4037;
     line-height: 1.6;
-    cursor: url('paw_cursor.png'), auto;
+}
+
+/* Custom cursor styles */
+.cursor-enabled {
+    cursor: url('cursor_hand.png'), pointer !important;
+}
+
+#snoot-image, 
+#boop-button, 
+.snoot-item, 
+#generate-button, 
+#random-button,
+input[type="text"] {
+    cursor: url('cursor_hand.png'), pointer !important;
 }
 
 .container {
@@ -76,7 +89,7 @@ main {
 #snoot-image {
     max-width: 100%;
     max-height: 100%;
-    cursor: url('paw_cursor.png'), pointer;
+    cursor: url('cursor_hand.png'), pointer !important;
     transition: transform 0.2s;
 }
 
@@ -86,7 +99,6 @@ main {
 
 #snoot-image:active {
     transform: scale(0.97);
-    cursor: url('booping_paw_cursor.png'), pointer;
 }
 
 #boop-effect {
@@ -115,7 +127,7 @@ button {
     border-radius: 50px;
     padding: 12px 25px;
     font-size: 1.2rem;
-    cursor: url('paw_cursor.png'), pointer;
+    cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -129,13 +141,13 @@ button:hover {
 button:active {
     transform: translateY(1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    cursor: url('booping_paw_cursor.png'), pointer;
 }
 
 #boop-button {
     font-size: 1.5rem;
     padding: 15px 30px;
     background-color: #FF5722;
+    cursor: url('cursor_hand.png'), pointer !important;
 }
 
 .generator-controls {
@@ -159,6 +171,7 @@ input[type="text"] {
     font-size: 1rem;
     outline: none;
     transition: border-color 0.3s;
+    cursor: url('cursor_hand.png'), pointer !important;
 }
 
 input[type="text"]:focus {
@@ -169,6 +182,7 @@ input[type="text"]:focus {
     background-color: #9575CD;
     width: 100%;
     margin-top: 10px;
+    cursor: url('cursor_hand.png'), pointer !important;
 }
 
 #random-button:hover {
@@ -222,16 +236,12 @@ input[type="text"]:focus {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    cursor: url('paw_cursor.png'), pointer;
+    cursor: url('cursor_hand.png'), pointer !important;
     transition: transform 0.2s;
 }
 
 .snoot-item:hover {
     transform: scale(1.05);
-}
-
-.snoot-item:active {
-    cursor: url('booping_paw_cursor.png'), pointer;
 }
 
 .snoot-item img {

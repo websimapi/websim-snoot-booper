@@ -18,7 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let discoveredSnoots = [];
     let boopSound;
     let audioEnabled = true;
-    let isBooping = false;
+    
+    // Initialize custom cursor
+    initializeCursor();
     
     // Initialize sound
     initializeAudio();
@@ -32,29 +34,25 @@ document.addEventListener('DOMContentLoaded', () => {
     generateButton.addEventListener('click', generateCustomSnoot);
     randomButton.addEventListener('click', generateRandomSnoot);
     
-    // Setup cursor animation on mousedown/mouseup for boopable elements
-    document.querySelectorAll('#snoot-image, #boop-button, button, .snoot-item').forEach(element => {
-        element.addEventListener('mousedown', () => {
-            document.body.style.cursor = "url('booping_paw_cursor.png'), pointer";
-        });
+    // Function to initialize custom cursor
+    function initializeCursor() {
+        // Pre-load cursor image to ensure it's available
+        const cursorImage = new Image();
+        cursorImage.src = 'cursor_hand.png';
         
-        element.addEventListener('mouseup', () => {
-            document.body.style.cursor = "url('paw_cursor.png'), auto";
-        });
+        // Add cursor class to interactive elements when image is loaded
+        cursorImage.onload = () => {
+            const interactiveElements = document.querySelectorAll('#snoot-image, #boop-button, .snoot-item, #generate-button, #random-button, input[type="text"]');
+            interactiveElements.forEach(element => {
+                element.classList.add('cursor-enabled');
+            });
+        };
         
-        // Handle case where mouse moves off element while pressed
-        element.addEventListener('mouseleave', () => {
-            if (!isBooping) {
-                document.body.style.cursor = "url('paw_cursor.png'), auto";
-            }
-        });
-    });
-    
-    // Handle global mouseup to reset cursor
-    document.addEventListener('mouseup', () => {
-        document.body.style.cursor = "url('paw_cursor.png'), auto";
-        isBooping = false;
-    });
+        // Fallback if cursor image fails to load
+        cursorImage.onerror = (error) => {
+            console.error('Custom cursor image failed to load:', error);
+        };
+    }
     
     // Function to initialize audio
     function initializeAudio() {
@@ -83,12 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to boop the snoot
     function boopTheSnoot() {
-        // Indicate booping state
-        isBooping = true;
-        
-        // Change cursor to booping state
-        document.body.style.cursor = "url('booping_paw_cursor.png'), pointer";
-        
         // Play boop sound if audio is enabled
         if (audioEnabled && boopSound) {
             try {
@@ -118,12 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
         snootImage.style.animation = 'none';
         void snootImage.offsetWidth; // Trigger reflow
         snootImage.style.animation = 'jiggle 0.5s';
-        
-        // Reset cursor after animation completes
-        setTimeout(() => {
-            isBooping = false;
-            document.body.style.cursor = "url('paw_cursor.png'), auto";
-        }, 500);
         
         // Update boop count
         boopCount++;
@@ -229,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addSnootToHistory(snoot) {
         const snootItem = document.createElement('div');
         snootItem.classList.add('snoot-item');
+        snootItem.classList.add('cursor-enabled');
         
         const img = document.createElement('img');
         img.src = snoot.imageUrl;
