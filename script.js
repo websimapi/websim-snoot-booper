@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let discoveredSnoots = [];
     let boopSound;
     let audioEnabled = true;
+    let isBooping = false;
     
     // Initialize sound
     initializeAudio();
@@ -30,6 +31,30 @@ document.addEventListener('DOMContentLoaded', () => {
     snootImage.addEventListener('click', boopTheSnoot);
     generateButton.addEventListener('click', generateCustomSnoot);
     randomButton.addEventListener('click', generateRandomSnoot);
+    
+    // Setup cursor animation on mousedown/mouseup for boopable elements
+    document.querySelectorAll('#snoot-image, #boop-button, button, .snoot-item').forEach(element => {
+        element.addEventListener('mousedown', () => {
+            document.body.style.cursor = "url('booping_paw_cursor.png'), pointer";
+        });
+        
+        element.addEventListener('mouseup', () => {
+            document.body.style.cursor = "url('paw_cursor.png'), auto";
+        });
+        
+        // Handle case where mouse moves off element while pressed
+        element.addEventListener('mouseleave', () => {
+            if (!isBooping) {
+                document.body.style.cursor = "url('paw_cursor.png'), auto";
+            }
+        });
+    });
+    
+    // Handle global mouseup to reset cursor
+    document.addEventListener('mouseup', () => {
+        document.body.style.cursor = "url('paw_cursor.png'), auto";
+        isBooping = false;
+    });
     
     // Function to initialize audio
     function initializeAudio() {
@@ -58,6 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to boop the snoot
     function boopTheSnoot() {
+        // Indicate booping state
+        isBooping = true;
+        
+        // Change cursor to booping state
+        document.body.style.cursor = "url('booping_paw_cursor.png'), pointer";
+        
         // Play boop sound if audio is enabled
         if (audioEnabled && boopSound) {
             try {
@@ -87,6 +118,12 @@ document.addEventListener('DOMContentLoaded', () => {
         snootImage.style.animation = 'none';
         void snootImage.offsetWidth; // Trigger reflow
         snootImage.style.animation = 'jiggle 0.5s';
+        
+        // Reset cursor after animation completes
+        setTimeout(() => {
+            isBooping = false;
+            document.body.style.cursor = "url('paw_cursor.png'), auto";
+        }, 500);
         
         // Update boop count
         boopCount++;
