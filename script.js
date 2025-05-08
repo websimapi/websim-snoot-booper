@@ -1,3 +1,11 @@
+// Add at the top with other global variables
+const room = new WebsimSocket();
+let sharedSnootsGrid;
+let gallerySearch;
+let refreshGalleryButton;
+let shareSnootButton;
+let galleryLoading;
+
 document.addEventListener('DOMContentLoaded', () => {
     // Elements
     const snootImage = document.getElementById('snoot-image');
@@ -15,6 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
     const startButton = document.getElementById('start-button');
 
+    // Add new element references
+    sharedSnootsGrid = document.getElementById('shared-snoots-grid');
+    gallerySearch = document.getElementById('gallery-search');
+    refreshGalleryButton = document.getElementById('refresh-gallery');
+    shareSnootButton = document.getElementById('share-snoot-button');
+    galleryLoading = document.getElementById('gallery-loading');
+
     // Game state
     let boopCount = 0;
     let snootCount = 0;
@@ -22,29 +37,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let discoveredSnoots = [];
     let boopSound;
     let audioEnabled = true;
-    
+
     // Initialize custom cursor
     initializeCursor();
-    
+
     // Initialize sound
     initializeAudio();
-    
+
     // Load saved data from localStorage
     loadGameState();
-    
+
     // Set up event listeners
     boopButton.addEventListener('click', boopTheSnoot);
     snootImage.addEventListener('click', boopTheSnoot);
     generateButton.addEventListener('click', generateCustomSnoot);
     randomButton.addEventListener('click', generateRandomSnoot);
     startButton.addEventListener('click', startExperience);
-    
+
+    // Add new event listeners
+    shareSnootButton.addEventListener('click', shareCurrentSnoot);
+    refreshGalleryButton.addEventListener('click', refreshGallery);
+    gallerySearch.addEventListener('input', debounce(handleGallerySearch, 300));
+
+    // Initialize shared gallery
+    initializeSharedGallery();
+
     // Function to initialize custom cursor
     function initializeCursor() {
         // Pre-load cursor image to ensure it's available
         const cursorImage = new Image();
         cursorImage.src = 'cursor_hand.png';
-        
+
         // Add cursor class to interactive elements when image is loaded
         cursorImage.onload = () => {
             const interactiveElements = document.querySelectorAll('#snoot-image, #boop-button, .snoot-item, #generate-button, #random-button, input[type="text"]');
@@ -52,30 +75,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 element.classList.add('cursor-enabled');
             });
         };
-        
+
         // Fallback if cursor image fails to load
         cursorImage.onerror = (error) => {
             console.error('Custom cursor image failed to load:', error);
         };
     }
-    
+
     // Function to initialize audio
     function initializeAudio() {
         try {
             boopSound = new Audio('boop_sound.mp3');
             boopSound.volume = 0.5;
-            
+
             // Check if audio can be played
             boopSound.addEventListener('canplaythrough', () => {
                 audioEnabled = true;
             });
-            
+
             // Handle audio loading error
             boopSound.addEventListener('error', (e) => {
                 console.error('Audio loading error:', e);
                 audioEnabled = false;
             });
-            
+
             // Preload the audio
             boopSound.load();
         } catch (error) {
@@ -83,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             audioEnabled = false;
         }
     }
-    
+
     // Function to boop the snoot
     function boopTheSnoot() {
         // Play boop sound if audio is enabled
@@ -91,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 boopSound.currentTime = 0;
                 const playPromise = boopSound.play();
-                
+
                 // Handle play promise rejection
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
@@ -104,26 +127,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 audioEnabled = false;
             }
         }
-        
+
         // Show boop effect
         boopEffect.classList.add('active');
         setTimeout(() => {
             boopEffect.classList.remove('active');
         }, 700);
-        
+
         // Add jiggle animation to the snoot
         snootImage.style.animation = 'none';
         void snootImage.offsetWidth; // Trigger reflow
         snootImage.style.animation = 'jiggle 0.5s';
-        
+
         // Update boop count
         boopCount++;
         boopCountDisplay.textContent = boopCount;
-        
+
         // Save game state
         saveGameState();
     }
-    
+
     // Function to generate a custom snoot based on user input
     async function generateCustomSnoot() {
         const userInput = snootInput.value.trim();
@@ -131,14 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please describe the snoot you want to generate!');
             return;
         }
-        
+
         await generateSnoot(userInput);
     }
-    
+
     // Function to generate a random snoot idea
     async function generateRandomSnoot() {
         setLoading(true);
-        
+
         try {
             // Get a random snoot idea using AI
             const completion = await websim.chat.completions.create({
@@ -159,13 +182,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ],
                 json: true
             });
-            
+
             const result = JSON.parse(completion.content);
             const randomPrompt = result.concept;
-            
+
             // Show the user what we're generating
             snootInput.value = randomPrompt;
-            
+
             // Generate the snoot image
             await generateSnoot(randomPrompt);
         } catch (error) {
@@ -174,39 +197,39 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(false);
         }
     }
-    
+
     // Function to generate a snoot image based on a prompt
     async function generateSnoot(prompt) {
         setLoading(true);
-        
+
         try {
             // Generate detailed prompt for better image quality
             const detailedPrompt = `close-up of a cute ${prompt}'s nose and face, adorable, hand-drawn style, soft colors, family-friendly, cartoonish`;
-            
+
             // Generate image using AI
             const result = await websim.imageGen({
                 prompt: detailedPrompt,
                 aspect_ratio: "1:1",
             });
-            
+
             // Update the image and current prompt
             snootImage.src = result.url;
             currentSnootPrompt = prompt;
-            
+
             // Add to discovered snoots if it's new
             if (!discoveredSnoots.some(snoot => snoot.prompt === prompt)) {
                 snootCount++;
                 snootCountDisplay.textContent = snootCount;
-                
+
                 const newSnoot = {
                     prompt: prompt,
                     imageUrl: result.url
                 };
-                
+
                 discoveredSnoots.push(newSnoot);
                 addSnootToHistory(newSnoot);
             }
-            
+
             setLoading(false);
             saveGameState();
         } catch (error) {
@@ -215,33 +238,33 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(false);
         }
     }
-    
+
     // Function to add a snoot to the history display
     function addSnootToHistory(snoot) {
         const snootItem = document.createElement('div');
         snootItem.classList.add('snoot-item');
         snootItem.classList.add('cursor-enabled');
-        
+
         const img = document.createElement('img');
         img.src = snoot.imageUrl;
         img.alt = snoot.prompt;
         img.title = snoot.prompt;
-        
+
         snootItem.appendChild(img);
         snootItem.addEventListener('click', () => {
             snootImage.src = snoot.imageUrl;
             currentSnootPrompt = snoot.prompt;
             snootInput.value = snoot.prompt;
         });
-        
+
         snootHistory.prepend(snootItem);
-        
+
         // Limit the number of snoots shown to prevent performance issues
         if (snootHistory.children.length > 12) {
             snootHistory.removeChild(snootHistory.lastChild);
         }
     }
-    
+
     // Function to show/hide loading indicator
     function setLoading(isLoading) {
         if (isLoading) {
@@ -254,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             randomButton.disabled = false;
         }
     }
-    
+
     // Function to save game state to localStorage
     function saveGameState() {
         const gameState = {
@@ -262,29 +285,29 @@ document.addEventListener('DOMContentLoaded', () => {
             snootCount,
             discoveredSnoots
         };
-        
+
         localStorage.setItem('snootBooperState', JSON.stringify(gameState));
     }
-    
+
     // Function to load game state from localStorage
     function loadGameState() {
         const savedState = localStorage.getItem('snootBooperState');
-        
+
         if (savedState) {
             const gameState = JSON.parse(savedState);
-            
+
             boopCount = gameState.boopCount || 0;
             snootCount = gameState.snootCount || 0;
             discoveredSnoots = gameState.discoveredSnoots || [];
-            
+
             boopCountDisplay.textContent = boopCount;
             snootCountDisplay.textContent = snootCount;
-            
+
             // Populate history
             discoveredSnoots.slice(-12).forEach(snoot => {
                 addSnootToHistory(snoot);
             });
-            
+
             // Load the most recent snoot if available
             if (discoveredSnoots.length > 0) {
                 const lastSnoot = discoveredSnoots[discoveredSnoots.length - 1];
@@ -293,12 +316,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
+
     // Function to start the experience and capture cursor
     function startExperience() {
         // Hide the overlay
         startOverlay.style.display = 'none';
-        
+
         // Get or create custom cursor element
         let customCursor = document.getElementById('custom-cursor');
         if (!customCursor) {
@@ -307,30 +330,153 @@ document.addEventListener('DOMContentLoaded', () => {
             customCursor.style.backgroundImage = "url('cursor_hand.png')";
             document.body.appendChild(customCursor);
         }
-        
+
         // Show custom cursor and hide default cursor
         customCursor.style.display = 'block';
         document.body.classList.add('cursor-hidden');
-        
+
         // Ensure cursor stays hidden when leaving/entering window
         document.addEventListener('mouseleave', () => {
             customCursor.style.display = 'none';
         });
-        
+
         document.addEventListener('mouseenter', () => {
             customCursor.style.display = 'block';
         });
-        
+
         // Update cursor position
         document.addEventListener('mousemove', (e) => {
             customCursor.style.left = e.clientX + 'px';
             customCursor.style.top = e.clientY + 'px';
         });
-        
+
         // If the game hasn't generated a snoot yet, generate one
         if (discoveredSnoots.length === 0) {
             generateRandomSnoot();
         }
+    }
+
+    // New functions for shared gallery functionality
+    async function initializeSharedGallery() {
+        // Subscribe to shared snoots collection
+        room.collection('shared_snoot').subscribe(handleGalleryUpdate);
+        await refreshGallery();
+    }
+
+    async function shareCurrentSnoot() {
+        if (!currentSnootPrompt || !snootImage.src) {
+            alert('Please generate a snoot first!');
+            return;
+        }
+
+        try {
+            await room.collection('shared_snoot').create({
+                prompt: currentSnootPrompt,
+                image_url: snootImage.src,
+            });
+
+            alert('Snoot shared successfully!');
+        } catch (error) {
+            console.error('Error sharing snoot:', error);
+            alert('Failed to share snoot. Please try again.');
+        }
+    }
+
+    function handleGalleryUpdate(sharedSnoots) {
+        renderGallery(sharedSnoots);
+    }
+
+    async function refreshGallery() {
+        galleryLoading.classList.remove('hidden');
+        const searchTerm = gallerySearch.value.toLowerCase().trim();
+
+        try {
+            const snoots = await room.collection('shared_snoot').getList();
+            const filteredSnoots = searchTerm
+                ? snoots.filter(snoot => snoot.prompt.toLowerCase().includes(searchTerm))
+                : snoots;
+
+            renderGallery(filteredSnoots);
+        } catch (error) {
+            console.error('Error refreshing gallery:', error);
+        } finally {
+            galleryLoading.classList.add('hidden');
+        }
+    }
+
+    function handleGallerySearch() {
+        refreshGallery();
+    }
+
+    function renderGallery(snoots) {
+        sharedSnootsGrid.innerHTML = '';
+
+        snoots.forEach(snoot => {
+            const item = document.createElement('div');
+            item.classList.add('shared-snoot-item');
+            item.classList.add('cursor-enabled');
+
+            const img = document.createElement('img');
+            img.src = snoot.image_url;
+            img.alt = snoot.prompt;
+
+            const info = document.createElement('div');
+            info.classList.add('shared-snoot-info');
+            info.textContent = snoot.prompt;
+
+            const collectButton = document.createElement('button');
+            collectButton.classList.add('collect-button');
+            collectButton.classList.add('cursor-enabled');
+            collectButton.innerHTML = '';
+            collectButton.title = 'Add to my collection';
+
+            collectButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                collectSnoot(snoot);
+            });
+
+            item.appendChild(img);
+            item.appendChild(info);
+            item.appendChild(collectButton);
+
+            item.addEventListener('click', () => {
+                snootImage.src = snoot.image_url;
+                currentSnootPrompt = snoot.prompt;
+                snootInput.value = snoot.prompt;
+            });
+
+            sharedSnootsGrid.appendChild(item);
+        });
+    }
+
+    function collectSnoot(snoot) {
+        // Add to discovered snoots if it's new
+        if (!discoveredSnoots.some(s => s.prompt === snoot.prompt)) {
+            snootCount++;
+            snootCountDisplay.textContent = snootCount;
+
+            const newSnoot = {
+                prompt: snoot.prompt,
+                imageUrl: snoot.image_url
+            };
+
+            discoveredSnoots.push(newSnoot);
+            addSnootToHistory(newSnoot);
+            saveGameState();
+        }
+    }
+
+    // Utility function for debouncing search input
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 
     // Add CSS animation
@@ -347,5 +493,5 @@ document.addEventListener('DOMContentLoaded', () => {
     pointer-events: none;
 }
 `;
-document.head.appendChild(style);
+    document.head.appendChild(style);
 });
