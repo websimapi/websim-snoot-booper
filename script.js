@@ -299,52 +299,43 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hide the overlay
         startOverlay.style.display = 'none';
         
-        // Apply custom cursor to the entire body
-        document.body.classList.add('cursor-hidden');
-        
-        // Update cursor position with custom cursor
-        document.addEventListener('mousemove', updateCustomCursor);
-        
-        // Create custom cursor element if it doesn't exist
-        if (!document.getElementById('custom-cursor')) {
-            const customCursor = document.createElement('div');
+        // Get or create custom cursor element
+        let customCursor = document.getElementById('custom-cursor');
+        if (!customCursor) {
+            customCursor = document.createElement('div');
             customCursor.id = 'custom-cursor';
             customCursor.style.backgroundImage = "url('cursor_hand.png')";
-            customCursor.style.backgroundSize = 'contain';
-            customCursor.style.backgroundRepeat = 'no-repeat';
-            customCursor.style.width = '40px';
-            customCursor.style.height = '40px';
-            customCursor.style.position = 'fixed';
-            customCursor.style.pointerEvents = 'none';
-            customCursor.style.zIndex = '9999';
-            customCursor.style.transform = 'translate(-50%, -50%)';
             document.body.appendChild(customCursor);
         }
+        
+        // Show custom cursor and hide default cursor
+        customCursor.style.display = 'block';
+        document.body.classList.add('cursor-hidden');
+        
+        // Ensure cursor stays hidden when leaving/entering window
+        document.addEventListener('mouseleave', () => {
+            customCursor.style.display = 'none';
+        });
+        
+        document.addEventListener('mouseenter', () => {
+            customCursor.style.display = 'block';
+        });
+        
+        // Update cursor position
+        document.addEventListener('mousemove', (e) => {
+            customCursor.style.left = e.clientX + 'px';
+            customCursor.style.top = e.clientY + 'px';
+        });
         
         // If the game hasn't generated a snoot yet, generate one
         if (discoveredSnoots.length === 0) {
             generateRandomSnoot();
         }
     }
-    
-    // Function to update custom cursor position
-    function updateCustomCursor(e) {
-        const customCursor = document.getElementById('custom-cursor');
-        if (customCursor) {
-            customCursor.style.left = e.clientX + 'px';
-            customCursor.style.top = e.clientY + 'px';
-        }
-    }
 
-    // Generate default snoot if no saved state
-    // if (discoveredSnoots.length === 0) {
-    //     generateRandomSnoot();
-    // }
-});
-
-// Add CSS animation
-const style = document.createElement('style');
-style.textContent = `
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
 @keyframes jiggle {
     0% { transform: scale(1); }
     25% { transform: scale(0.95); }
@@ -357,3 +348,4 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
+});
