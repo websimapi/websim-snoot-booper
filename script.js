@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const snootHistory = document.getElementById('snoot-history');
     const loadingIndicator = document.getElementById('loading');
 
+    // New elements
+    const startOverlay = document.getElementById('start-overlay');
+    const startButton = document.getElementById('start-button');
+
     // Game state
     let boopCount = 0;
     let snootCount = 0;
@@ -33,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     snootImage.addEventListener('click', boopTheSnoot);
     generateButton.addEventListener('click', generateCustomSnoot);
     randomButton.addEventListener('click', generateRandomSnoot);
+    startButton.addEventListener('click', startExperience);
     
     // Function to initialize custom cursor
     function initializeCursor() {
@@ -289,10 +294,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Generate default snoot if no saved state
-    if (discoveredSnoots.length === 0) {
-        generateRandomSnoot();
+    // Function to start the experience and capture cursor
+    function startExperience() {
+        // Hide the overlay
+        startOverlay.style.display = 'none';
+        
+        // Apply custom cursor to the entire body
+        document.body.classList.add('cursor-hidden');
+        
+        // Update cursor position with custom cursor
+        document.addEventListener('mousemove', updateCustomCursor);
+        
+        // Create custom cursor element if it doesn't exist
+        if (!document.getElementById('custom-cursor')) {
+            const customCursor = document.createElement('div');
+            customCursor.id = 'custom-cursor';
+            customCursor.style.backgroundImage = "url('cursor_hand.png')";
+            customCursor.style.backgroundSize = 'contain';
+            customCursor.style.backgroundRepeat = 'no-repeat';
+            customCursor.style.width = '40px';
+            customCursor.style.height = '40px';
+            customCursor.style.position = 'fixed';
+            customCursor.style.pointerEvents = 'none';
+            customCursor.style.zIndex = '9999';
+            customCursor.style.transform = 'translate(-50%, -50%)';
+            document.body.appendChild(customCursor);
+        }
+        
+        // If the game hasn't generated a snoot yet, generate one
+        if (discoveredSnoots.length === 0) {
+            generateRandomSnoot();
+        }
     }
+    
+    // Function to update custom cursor position
+    function updateCustomCursor(e) {
+        const customCursor = document.getElementById('custom-cursor');
+        if (customCursor) {
+            customCursor.style.left = e.clientX + 'px';
+            customCursor.style.top = e.clientY + 'px';
+        }
+    }
+
+    // Generate default snoot if no saved state
+    // if (discoveredSnoots.length === 0) {
+    //     generateRandomSnoot();
+    // }
 });
 
 // Add CSS animation
@@ -304,6 +351,9 @@ style.textContent = `
     50% { transform: scale(1.05); }
     75% { transform: scale(0.98); }
     100% { transform: scale(1); }
+}
+#custom-cursor {
+    pointer-events: none;
 }
 `;
 document.head.appendChild(style);
